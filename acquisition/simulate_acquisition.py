@@ -1,53 +1,58 @@
 import numpy as np
 import time
 from threading import Thread
-import sys
-from pathlib import Path
-# Add parent directory to path to find buffer module
-sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# To run this module, use the command to execute it from the project root:
+#    python -m acquisition.simulate_acquisition
 from buffer.data_buffer import DataBuffer
 
+
 class SignalGenerator:
-    def __init__(self, buffer: DataBuffer, fs: int = 250):
+    def __init__(self, buffer: DataBuffer, fs=250):
         self.buffer = buffer
         self.fs = fs
         self.dt = 1.0 / fs
         self.running = False
 
         self.t = 0.0
+        self.n_channels = buffer.n_channels
+
+        # Per-channel parameters randomized
+        self.amplitudes = np.random.uniform(0.5, 1.5, self.n_channels)
+        self.phases = np.random.uniform(0, 2*np.pi, self.n_channels)
 
     def generate_sample(self):
-        """Generate one sample for all channels"""
+        """Generate one multi-channel sample"""
+        samples = []
 
-        # Alpha wave (10 Hz)
-        alpha = np.sin(2 * np.pi * 10 * self.t)
+        for i in range(self.n_channels):
+            # Alpha wave 10 Hz
+            alpha = self.amplitudes[i] * np.sin(2 * np.pi * 10 * self.t + self.phases[i])
 
-        # Noise
-        noise = np.random.normal(0, 0.5)
+            # Noise
+            noise = np.random.normal(0, 0.5)
 
-        # 50 Hz interference
-        interference = 0.3 * np.sin(2 * np.pi * 50 * self.t)
+            # 50 Hz interference
+            interference = 0.2 * np.sin(2 * np.pi * 50 * self.t)
 
-        # Channel examples
-        ch1 = alpha + noise + interference
-        ch2 = 0.5 * alpha + np.random.normal(0, 0.5)
+            value = alpha + noise + interference
+            samples.append(value)
 
-        return [ch1, ch2]
+        return samples
 
     def run(self):
         self.running = True
+        next_time = time.time()
+
         while self.running:
-            start_time = time.time()
-
             sample = self.generate_sample()
-            timestamp = self.t
 
-            self.buffer.add_sample(sample, timestamp)
+            self.buffer.add_sample(sample, self.t)
             self.t += self.dt
 
-            # maintain sampling rate
-            elapsed = time.time() - start_time
-            sleep_time = self.dt - elapsed
+            next_time += self.dt
+            sleep_time = next_time - time.time()
+
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
@@ -63,8 +68,8 @@ class SignalGenerator:
 if __name__ == "__main__":
     buffer = DataBuffer(
         n_channels=2,
-        max_samples=1000,
-        sampling_rate=100
+        time_window_s=5,
+        sampling_rate_Hz=100
     )
 
     generator = SignalGenerator(buffer, fs=100)

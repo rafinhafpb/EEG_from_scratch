@@ -3,14 +3,14 @@ from typing import Tuple, List
 from threading import Lock
 
 class DataBuffer:
-    def __init__(self, n_channels: int, max_samples: int, sampling_rate: int):
+    def __init__(self, n_channels: int, time_window_s: int, sampling_rate_Hz: int):
         self.n_channels = n_channels
-        self.max_samples = max_samples
-        self.fs = sampling_rate
+        self.max_samples = time_window_s * sampling_rate_Hz
+        self.fs = sampling_rate_Hz
 
         # Shape: (n_channels, max_samples)
-        self.data = np.zeros((n_channels, max_samples), dtype=np.float32)
-        self.timestamps = np.zeros(max_samples, dtype=np.float64)
+        self.data = np.zeros((n_channels, self.max_samples), dtype=np.float32)
+        self.timestamps = np.zeros(self.max_samples, dtype=np.float64)
 
         self.write_idx = 0
         self.size = 0
