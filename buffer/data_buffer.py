@@ -6,6 +6,7 @@ class DataBuffer:
     def __init__(self, n_channels: int, time_window_s: int, sampling_rate_Hz: int):
         self.n_channels = n_channels
         self.max_samples = time_window_s * sampling_rate_Hz
+        self.time_window_s = time_window_s
         self.fs = sampling_rate_Hz
 
         # Shape: (n_channels, max_samples)

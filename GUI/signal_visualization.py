@@ -1,4 +1,5 @@
 import pyqtgraph as pg
+from typing import Optional
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 import numpy as np
 
@@ -14,12 +15,12 @@ plot_colors = [
 ]
 
 class SignalPlotter(QWidget):
-    def __init__(self, n_channels: int):
+    def __init__(self, n_channels: int, x_label: Optional[str] = "Time (s)"):
         super().__init__()
         self.n_channels = n_channels
-        self.init_ui()
+        self.init_ui(x_label)
 
-    def init_ui(self):
+    def init_ui(self, x_label):
         layout = QVBoxLayout()
 
         # Main graphics layout
@@ -35,7 +36,7 @@ class SignalPlotter(QWidget):
             plot = self.graphics_layout.addPlot(row=i, col=0)
             plot.setLabel('left', f'Ch {i+1}')
             if i == self.n_channels - 1:
-                plot.setLabel('bottom', 'Time (s)')
+                plot.setLabel('bottom', x_label)
 
             # Link X axis (shared time axis)
             if i > 0:

@@ -1,5 +1,5 @@
 from signal_processing.signal_processor import SignalProcessor
-from PySide6.QtWidgets import QWidget, QGridLayout, QCheckBox, QLabel
+from PySide6.QtWidgets import QWidget, QGridLayout, QCheckBox, QLabel, QSlider, QGroupBox, QHBoxLayout, QSizePolicy
 from superqt import QRangeSlider
 from PySide6.QtCore import Qt, QSize
 
@@ -9,7 +9,15 @@ class ProcessingControls(QWidget):
         super().__init__()
         self.processor = processor
 
-        layout = QGridLayout()
+        main_layout = QHBoxLayout()
+
+        layout_filters = QGridLayout()
+        filters_group = QGroupBox("Filters")
+        filters_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
+
+        layout_plot_options = QGridLayout()
+        plot_options_group = QGroupBox("Plot Options")
+        plot_options_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
 
         self.cb_50 = QCheckBox("Notch 50 Hz")
         self.cb_50.setMinimumSize(QSize(100, 25))
@@ -38,17 +46,42 @@ class ProcessingControls(QWidget):
         self.slider_bpf.setEnabled(False)
         self.cb_bpf.toggled.connect(self.slider_bpf.setEnabled)
 
+        label_time_window = QLabel("Time Window: ")
+        label_time_window.setMaximumSize(QSize(100, 25))
+        self.label_time_window_value = QLabel("")
+        self.label_time_window_value.setMaximumSize(QSize(80, 25))
+
+        self.slider_time_window = QSlider(Qt.Orientation.Horizontal)
+        self.slider_time_window.setRange(1, processor.buffer.time_window_s)
+        self.slider_time_window.setMinimumSize(QSize(100, 10))
+        self.slider_time_window.valueChanged.connect(self._update_time_window_label)
+        self.slider_time_window.sliderReleased.connect(self._update_time_window_value)
+        self.slider_time_window.setValue(processor.buffer.time_window_s)
+
         # First row: 50 and 60 notch checkboxes
-        layout.addWidget(self.cb_50, 0, 0, 1, 2)
-        layout.addWidget(self.cb_60, 0, 2, 1, 2)
+        layout_filters.addWidget(self.cb_50, 0, 0, 1, 2)
+        layout_filters.addWidget(self.cb_60, 0, 2, 1, 2)
 
         # Second row: bpf checkbox, label min_value, slider, label max_value
-        layout.addWidget(self.cb_bpf, 1, 0, 1, 1)
-        layout.addWidget(self.label_bpf1, 1, 1, 1, 1)
-        layout.addWidget(self.slider_bpf, 1, 2, 1, 1)
-        layout.addWidget(self.label_bpf2, 1, 3, 1, 1)
+        layout_filters.addWidget(self.cb_bpf, 1, 0, 1, 1)
+        layout_filters.addWidget(self.label_bpf1, 1, 1, 1, 1)
+        layout_filters.addWidget(self.slider_bpf, 1, 2, 1, 1)
+        layout_filters.addWidget(self.label_bpf2, 1, 3, 1, 1)
 
-        self.setLayout(layout)
+        filters_group.setLayout(layout_filters)
+
+        # Third row: time window slider and value
+        layout_plot_options.addWidget(label_time_window, 0, 0, 1, 1)
+        layout_plot_options.addWidget(self.slider_time_window, 0, 1, 1, 3)
+        layout_plot_options.addWidget(self.label_time_window_value, 0, 4, 1, 1)
+
+        plot_options_group.setLayout(layout_plot_options)
+
+        # Main Layout
+        main_layout.addWidget(filters_group)
+        main_layout.addWidget(plot_options_group)
+
+        self.setLayout(main_layout)
 
     def _enforce_min_gap(self, value):
         low, high = value
@@ -73,3 +106,9 @@ class ProcessingControls(QWidget):
         low = 0.5 + low / 2.0
         high = 0.5 + high / 2.0
         self.processor.set_bpf_frequency((low, high))
+
+    def _update_time_window_label(self, value: int):
+        self.label_time_window_value.setText(str(value) + " s")
+
+    def _update_time_window_value(self):
+        self.processor.set_time_window(self.slider_time_window.value())

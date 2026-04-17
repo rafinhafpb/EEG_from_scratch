@@ -1,12 +1,13 @@
 import numpy as np
 from scipy import signal
 from buffer.data_buffer import DataBuffer
-from typing import Tuple
+from typing import Tuple, Optional
 
 class SignalProcessor:
     def __init__(self, buffer: DataBuffer):
         self.buffer = buffer
         self.fs = buffer.fs
+        self.time_window_s = buffer.time_window_s
 
         # Processing flags (controlled by GUI)
         self.use_notch_50 = False
@@ -38,12 +39,9 @@ class SignalProcessor:
         self.notch60_state = [zi_60.copy() for _ in range(n)]
         self.bpf_state = [zi_bpf.copy() for _ in range(n)]
 
-    def process(self, data: np.ndarray = None) -> np.ndarray:
+    def process_data(self, data: np.ndarray) -> np.ndarray:
         """data: (n_channels, n_samples)"""
-        if data is None:
-            processed = self.buffer.get_data()[0].copy()
-        else:
-            processed = data.copy()
+        processed = data.copy()
 
         for i in range(processed.shape[0]):
             x = processed[i]
@@ -83,6 +81,9 @@ class SignalProcessor:
         self.bpf_b, self.bpf_a = signal.butter(4, frequencies, btype='bandpass', fs=self.fs)
         self._reset_filter_states()
 
+    def set_time_window(self, value: int):
+        self.time_window_s = value
+
     def enable_50_Hz_notch(self, enabled: bool):
         self.use_notch_50 = enabled
 
@@ -93,11 +94,11 @@ class SignalProcessor:
         self.use_bpf = enabled
         self._reset_filter_states()
 
-    def get_processed_window(self, time_s: int = 2.0):
-        data, ts = self.buffer.get_window_time(time_s)
+    def get_processed_window(self):
+        data, ts = self.buffer.get_window_time(self.time_window_s)
 
         if data.shape[1] < 10:
             return data, ts  # not enough samples yet
 
-        processed = self.process(data)
+        processed = self.process_data(data)
         return processed, ts
