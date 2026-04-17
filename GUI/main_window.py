@@ -8,7 +8,9 @@ from PySide6.QtGui import QAction, QIcon
 from buffer.data_buffer import DataBuffer
 from GUI.signal_visualization import SignalPlotter
 from GUI.dock_widget import DockWidget
+from GUI.processing_controls import ProcessingControls
 from acquisition.simulate_acquisition import SignalGenerator
+from signal_processing.signal_processor import SignalProcessor
 
 
 class MainWindow(QMainWindow):
@@ -16,6 +18,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.buffer = buffer
+        self.processor = SignalProcessor(self.buffer)
         self.setWindowTitle("EEG Application")
         self.setMinimumWidth(600)
 
@@ -27,14 +30,24 @@ class MainWindow(QMainWindow):
         self._create_toolbar_button(os.path.join(base_dir, "icons/play.png"), self._start_acquisition)
         self._create_toolbar_button(os.path.join(base_dir, "icons/stop.png"), self._stop_acquisition)
 
-        # Plotter
+        # Raw Signal Plotter
         self.signal_plotter = SignalPlotter(n_channels=self.buffer.n_channels)
-        dock_widget = DockWidget("Signal Plotter", self.signal_plotter)
-        self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, dock_widget)
+        raw_plot_dock_widget = DockWidget("Raw Signal", self.signal_plotter)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, raw_plot_dock_widget)
+
+        # Processed Signal Plotter
+        self.processed_plotter = SignalPlotter(n_channels=self.buffer.n_channels)
+        processed_plot = DockWidget("Processed Signal", self.processed_plotter)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, processed_plot)
+
+        # Processing controls widget
+        processing_control = ProcessingControls(self.processor)
+        pc_dock_widget = DockWidget("Signal Processing Control", processing_control)
+        self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, pc_dock_widget)
 
         # Timer for real-time updates
         self.timer = QTimer()
-        self.timer.timeout.connect(self.update_plot)
+        self.timer.timeout.connect(self.update_signal_plots)
         self.timer.setInterval(100)  # 10 FPS
 
     def _create_toolbar_button(self, icon_path: str, callback) -> None:
@@ -50,13 +63,15 @@ class MainWindow(QMainWindow):
         print("Acq stopped")
         self.timer.stop()
 
-    def update_plot(self):
-        data, timestamp = self.buffer.get_data()
+    def update_signal_plots(self):
+        raw_data, timestamps = self.buffer.get_data()
+        proc_data = self.processor.process()
 
-        if len(timestamp) == 0:
+        if len(timestamps) == 0:
             return
 
-        self.signal_plotter.update_plot(timestamp, data)
+        self.signal_plotter.update_plot(timestamps, raw_data)
+        self.processed_plotter.update_plot(timestamps, proc_data)
 
 
 if __name__ == "__main__":
