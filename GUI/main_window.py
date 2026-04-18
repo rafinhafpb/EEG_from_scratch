@@ -1,5 +1,5 @@
 import os
-from PySide6.QtWidgets import QMainWindow, QApplication, QToolBar
+from PySide6.QtWidgets import QMainWindow, QApplication, QToolBar, QSizePolicy
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QIcon
 
@@ -10,6 +10,7 @@ from GUI.signal_visualization import SignalPlotter
 from GUI.dock_widget import DockWidget
 from GUI.processing_controls import ProcessingControls
 from GUI.fft_plotter_widget import FFTWidget
+from GUI.band_power_widget import BandPowerWidget
 from acquisition.simulate_acquisition import SignalGenerator
 from signal_processing.signal_processor import SignalProcessor
 
@@ -31,25 +32,30 @@ class MainWindow(QMainWindow):
         self._create_toolbar_button(os.path.join(base_dir, "icons/play.png"), self._start_acquisition)
         self._create_toolbar_button(os.path.join(base_dir, "icons/stop.png"), self._stop_acquisition)
 
-        # Processing controls widget
-        processing_control = ProcessingControls(self.processor)
-        pc_dock = DockWidget("Signal Processing Control", processing_control)
-        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, pc_dock)
-
         # Raw Signal Plotter
         self.signal_plotter = SignalPlotter(n_channels=self.buffer.n_channels)
         raw_plot_dock = DockWidget("Raw Signal", self.signal_plotter)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, raw_plot_dock)
+    
+        # Processing controls widget
+        processing_control = ProcessingControls(self.processor)
+        pc_dock = DockWidget("Signal Processing Control", processing_control, size_policy=(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, pc_dock)
 
         # Processed Signal Plotter
         self.processed_plotter = SignalPlotter(n_channels=self.buffer.n_channels)
         processed_plot = DockWidget("Processed Signal", self.processed_plotter)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, processed_plot)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, processed_plot)
 
         # FFT Widget
         self.fft_widget = FFTWidget(n_channels=self.buffer.n_channels, fs=self.buffer.fs)
         fft_dock = DockWidget("FFT Processed Signal", self.fft_widget)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, fft_dock)
+
+        # Band Power Widget
+        self.band_widget = BandPowerWidget(self.buffer.n_channels)
+        band_dock = DockWidget("Band Power", self.band_widget)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, band_dock)
 
         # Timer for real-time updates
         self.timer = QTimer()
@@ -71,14 +77,15 @@ class MainWindow(QMainWindow):
 
     def update_signal_plots(self):
         raw_data, timestamps = self.buffer.get_data()
-        proc_data, ts = self.processor.get_processed_window()
-        self.fft_widget.compute_fft_and_update_plot(proc_data)
-
         if len(timestamps) == 0:
             return
 
+        proc_data, ts = self.processor.get_processed_window()
+        freqs, spectra = self.fft_widget.compute_fft_and_update_plot(proc_data)
+
         self.signal_plotter.update_plot(timestamps, raw_data)
         self.processed_plotter.update_plot(ts, proc_data)
+        self.band_widget.update_plot(freqs, spectra)
 
 
 if __name__ == "__main__":
