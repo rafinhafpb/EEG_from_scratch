@@ -11,12 +11,11 @@ class SignalLoader:
     def __init__(
         self,
         buffer: DataBuffer,
-        filepath: str,
         target_fs: int,
         loop: bool = True
     ):
         self.buffer = buffer
-        self.filepath = filepath
+        self.filepath = ""
         self.target_fs = target_fs
         self.loop = loop
 
@@ -26,16 +25,18 @@ class SignalLoader:
         self.data = None  # shape: (n_channels, n_samples)
         self.labels = None
 
-        self._load_file()
-        self._resample_if_needed()
 
-    def _load_file(self):
+    def load_file(self, filepath: str):
+        self.filepath = filepath
+
         if self.filepath.endswith(".csv"):
             self._load_csv()
         elif self.filepath.endswith(".edf"):
             self._load_edf()
         else:
             raise ValueError("Unsupported file format")
+
+        self._resample_if_needed()
 
     def _load_csv(self):
         df = pd.read_csv(self.filepath, header=None)
@@ -57,6 +58,9 @@ class SignalLoader:
         self.original_fs = int(1.0 / np.mean(dt))
 
         print(f"[SignalLoader] CSV loaded | fs ≈ {self.original_fs} Hz")
+
+        # For this file specifically, to transform into uV:
+        self.data = (self.data - np.mean(self.data, axis=1, keepdims=True)) / 1000
 
     def _load_edf(self):
         if mne is None:

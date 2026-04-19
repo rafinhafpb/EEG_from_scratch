@@ -3,7 +3,6 @@ from GUI.main_window import MainWindow
 from acquisition.simulate_acquisition import SignalGenerator
 from acquisition.load_acquisition import SignalLoader
 from PySide6.QtWidgets import QApplication
-import numpy as np
 import sys
 
 LOAD = True
@@ -21,8 +20,7 @@ def main():
     )
 
     if LOAD:
-        loader = SignalLoader(buffer, filepath="acquisition/recordings/S1.csv", target_fs=160)
-        loader.data = loader.data = (loader.data - np.mean(loader.data, axis=1, keepdims=True)) / 1000
+        loader = SignalLoader(buffer, target_fs=160)
     else:
         generator = SignalGenerator(buffer, fs=SAMPLE_RATE)
 
@@ -31,6 +29,7 @@ def main():
     window = MainWindow(buffer)
 
     if LOAD:
+        window.open_file_selected.connect(loader.load_file)
         window.start_acquisition.connect(loader.start)
     else:
         window.start_acquisition.connect(generator.start)

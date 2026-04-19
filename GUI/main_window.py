@@ -1,5 +1,5 @@
 import os
-from PySide6.QtWidgets import QMainWindow, QApplication, QToolBar
+from PySide6.QtWidgets import QMainWindow, QApplication, QToolBar, QFileDialog
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QIcon
 
@@ -18,6 +18,7 @@ from signal_processing.signal_processor import SignalProcessor
 
 class MainWindow(QMainWindow):
     start_acquisition = Signal()
+    open_file_selected = Signal(str)
 
     def __init__(self, buffer: DataBuffer):
         super().__init__()
@@ -32,6 +33,7 @@ class MainWindow(QMainWindow):
         self.addToolBar(self.toolbar)
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
+        self._create_toolbar_button(os.path.join(base_dir, "icons/open.png"), self._open_file)
         self._create_toolbar_button(os.path.join(base_dir, "icons/play.png"), self._start_acquisition)
         self._create_toolbar_button(os.path.join(base_dir, "icons/stop.png"), self._stop_acquisition)
 
@@ -79,10 +81,17 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self.update_signal_plots)
         self.timer.setInterval(100)  # 10 FPS
 
-    def _create_toolbar_button(self, icon_path: str, callback) -> None:
+    def _create_toolbar_button(self, icon_path: str, callback):
         action = QAction(QIcon(icon_path), "", self)
         action.triggered.connect(callback)
         self.toolbar.addAction(action)
+
+    def _open_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Open File", "", "CSV Files (*.csv);;EDF Files (*.edf);;All Files (*)"
+        )
+        if file_path:
+            self.open_file_selected.emit(file_path)
 
     def _start_acquisition(self):
         print("Acq started")
