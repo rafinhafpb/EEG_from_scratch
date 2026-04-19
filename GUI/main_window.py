@@ -1,6 +1,6 @@
 import os
 from PySide6.QtWidgets import QMainWindow, QApplication, QToolBar
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QIcon
 
 # To run this module, use the command to execute it from the project root:
@@ -17,6 +17,8 @@ from signal_processing.signal_processor import SignalProcessor
 
 
 class MainWindow(QMainWindow):
+    start_acquisition = Signal()
+
     def __init__(self, buffer: DataBuffer):
         super().__init__()
 
@@ -84,6 +86,7 @@ class MainWindow(QMainWindow):
 
     def _start_acquisition(self):
         print("Acq started")
+        self.start_acquisition.emit()
         self.timer.start()
 
     def _stop_acquisition(self):
