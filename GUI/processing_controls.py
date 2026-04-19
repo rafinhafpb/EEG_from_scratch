@@ -13,29 +13,29 @@ class ProcessingControls(QWidget):
 
         layout_filters = QGridLayout()
         filters_group = QGroupBox("Filters")
-        filters_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
+        filters_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         layout_plot_options = QGridLayout()
         plot_options_group = QGroupBox("Plot Options")
-        plot_options_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
+        plot_options_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.cb_50 = QCheckBox("Notch 50 Hz")
-        self.cb_50.setMinimumSize(QSize(100, 25))
+        self.cb_50.setMinimumSize(QSize(100, 15))
         self.cb_60 = QCheckBox("Notch 60 Hz")
-        self.cb_60.setMinimumSize(QSize(100, 25))
+        self.cb_60.setMinimumSize(QSize(100, 15))
         self.cb_bpf = QCheckBox("Band-pass Filter")
-        self.cb_bpf.setMinimumSize(QSize(105, 25))
+        self.cb_bpf.setMinimumSize(QSize(105, 15))
 
         self.cb_50.toggled.connect(self.processor.enable_50_Hz_notch)
         self.cb_60.toggled.connect(self.processor.enable_60_Hz_notch)
         self.cb_bpf.toggled.connect(self.processor.enable_bpf)
 
         self.label_bpf1 = QLabel("0.5 Hz")
-        self.label_bpf1.setMinimumSize(QSize(45, 25))
+        self.label_bpf1.setMinimumSize(QSize(45, 15))
         self.label_bpf2 = QLabel("40 Hz")
-        self.label_bpf2.setMinimumSize(QSize(45, 25))
+        self.label_bpf2.setMinimumSize(QSize(45, 15))
 
-        self.min_gap = 24
+        self.min_gap = 10
         self.slider_bpf = QRangeSlider(Qt.Orientation.Horizontal)
         self.slider_bpf.setMinimumSize(QSize(100, 10))
         self.slider_bpf.setRange(0, 199)    # Values actually vary between 0.5-100
@@ -47,9 +47,9 @@ class ProcessingControls(QWidget):
         self.cb_bpf.toggled.connect(self.slider_bpf.setEnabled)
 
         label_time_window = QLabel("Time Window: ")
-        label_time_window.setMaximumSize(QSize(100, 25))
+        label_time_window.setMinimumSize(QSize(100, 15))
         self.label_time_window_value = QLabel("")
-        self.label_time_window_value.setMaximumSize(QSize(80, 25))
+        self.label_time_window_value.setMinimumSize(QSize(20, 15))
 
         self.slider_time_window = QSlider(Qt.Orientation.Horizontal)
         self.slider_time_window.setRange(1, processor.buffer.time_window_s)

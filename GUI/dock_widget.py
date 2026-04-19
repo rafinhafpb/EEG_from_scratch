@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QDockWidget, QWidget, QSizePolicy
+from PySide6.QtWidgets import QDockWidget, QWidget
 from PySide6.QtCore import Qt
 
 class DockWidget(QDockWidget):
@@ -8,7 +8,6 @@ class DockWidget(QDockWidget):
             widget: QWidget,
             features: QDockWidget.DockWidgetFeature = None,
             allowed_areas: Qt.DockWidgetArea = Qt.DockWidgetArea.AllDockWidgetAreas,
-            size_policy = (QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         ):
         super().__init__()
         self.setWindowTitle(title)
@@ -18,4 +17,3 @@ class DockWidget(QDockWidget):
             self.setFeatures(features)
 
         self.setAllowedAreas(allowed_areas)
-        self.setSizePolicy(size_policy[0], size_policy[1])

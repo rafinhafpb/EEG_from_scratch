@@ -3,7 +3,6 @@ import pyqtgraph as pg
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 from GUI.signal_visualization import plot_colors
 
-
 class BandPowerWidget(QWidget):
     def __init__(self, n_channels: int):
         super().__init__()
@@ -21,6 +20,7 @@ class BandPowerWidget(QWidget):
 
         self.band_names = list(self.bands.keys())
         self.n_bands = len(self.bands)
+        self.normalized_band_powers = np.zeros((len(self.band_names), n_channels))
 
         self.init_ui()
 
@@ -64,25 +64,33 @@ class BandPowerWidget(QWidget):
         power = spectra ** 2
         band_powers = []
 
-        for band_name, (f_low, f_high) in self.bands.items():
+        for _, (f_low, f_high) in self.bands.items():
             mask = (freqs >= f_low) & (freqs <= f_high)
 
-            # Mean power per channel in band
-            band_power = np.mean(power[:, mask], axis=1)
+            # Sum power per channel in band
+            band_power = np.sum(power[:, mask], axis=1)
             band_powers.append(band_power)
 
+        # shape: (n_bands, n_channels)
         band_powers = np.array(band_powers)
 
         # Normalize per channel
-        total_power = np.sum(band_powers, axis=0, keepdims=True)
-        normalized = band_powers / (total_power + 1e-8)
+        total_power = np.sum(power, axis=1, keepdims=True)
+        self.normalized_band_powers = band_powers / (total_power.T + 1e-8)
 
         # Update bars
         for ch in range(self.n_channels):
-            heights = normalized[:, ch]
+            heights = self.normalized_band_powers[:, ch]
             offset = (ch - (self.n_channels - 1) / 2) * (0.7 / self.n_channels)
 
             self.bar_items[ch].setOpts(
                 height = heights,
                 x = np.arange(self.n_bands) + offset
             )
+    
+    def get_band_powers(self) -> np.ndarray:
+        """
+        ### Returns
+        `band_powers`: normalized band power per channel, size (n_bands, n_channels)
+        """
+        return self.normalized_band_powers
