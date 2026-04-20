@@ -16,13 +16,14 @@ class BandDetectorWidget(QWidget):
     """
     trigger_signal = Signal(bool)
 
-    def __init__(self, n_channels: int, bands: List[str]):
+    def __init__(self, n_channels: int, bands: List[str], has_label: bool = False):
         super().__init__()
         # Initialize selection indices and threshold
         self.selected_band_idx = 0
         self.selected_channel_idx = -1
         self.threshold = 1.0
         self.trigger = False
+        self.has_label = has_label
 
         layout = QGridLayout()
 
@@ -104,6 +105,11 @@ class BandDetectorWidget(QWidget):
         layout.addWidget(self.label_threshold_value, 2, 2, 1, 1)
         layout.addWidget(self.label_trigger, 2, 3, 1, 1)
 
+        # Visualization of labels/classification (if provided)
+        if self.has_label:
+            self.label_classification = QLabel("")
+            layout.addWidget(self.label_classification, 3, 0, 1, 4)
+
         self.setLayout(layout)
 
     def _update_threshold(self, value: int):
@@ -151,3 +157,7 @@ class BandDetectorWidget(QWidget):
             self.label_trigger.setPixmap(self.trigger_false_img)
         
         self.trigger_signal.emit(self.trigger)
+
+    def set_label(self, label: str):
+        if self.has_label:
+            self.label_classification.setText(label)

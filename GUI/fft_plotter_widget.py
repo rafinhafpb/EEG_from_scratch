@@ -42,11 +42,11 @@ class FFTWidget(QWidget):
 
         self.setLayout(layout)
 
-    def compute_fft_and_update_plot(self, signal: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def compute_fft(self, signal: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         freqs, spectra = self.fft_calculator.compute(signal)
-        freqs_return = freqs
-        spectra_return = spectra
+        return freqs, spectra
 
+    def update_plot(self, freqs: np.ndarray, spectra: np.ndarray) -> None:
         # Apply max freq
         mask = freqs <= self.max_freq
         freqs = freqs[mask]
@@ -57,8 +57,6 @@ class FFTWidget(QWidget):
             spectra = 20 * np.log10(spectra + 1e-6)
 
         self.signal_plotter.update_plot(freqs, spectra)
-
-        return freqs_return, spectra_return
 
     def _set_log_scale(self, value: bool):
         self.log_scale = value
