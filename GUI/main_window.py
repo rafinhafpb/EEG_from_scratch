@@ -137,14 +137,9 @@ class MainWindow(QMainWindow):
             )
 
             loader.select_channels(channels)
+            data = loader.data
             fs = loader.target_fs
 
-            if fs < 120:
-                print("Original sampling rate is smaller than 120 (notch at 60 Hz is impossible).")
-                loader.resample_if_needed(120)
-                fs = 120
-
-            data = loader.data
             buffer = DataBuffer(
                 n_channels = data.shape[0],
                 time_window_s = 10,
