@@ -1,13 +1,8 @@
 from PySide6.QtWidgets import QLabel, QPushButton, QFileDialog, QDialog, QGridLayout, QVBoxLayout, QPlainTextEdit, QGroupBox, QHBoxLayout, QComboBox, QDialogButtonBox
 from PySide6.QtCore import Signal, QSize
+from utl.data import SAMPLE_RATE_OPTIONS
 from typing import List
 
-SAMPLE_RATE_OPTIONS = [
-    160,
-    240,
-    320,
-    400
-]
 
 class LoadFileDialog(QDialog):
     file_selected = Signal(str, int, list)     # file_path, sample_rate, selected_channels
@@ -37,7 +32,7 @@ class LoadFileDialog(QDialog):
         groupbox_config = QGroupBox("Configuration")
 
         container2 = QGridLayout()
-        label_sampling_rate = QLabel("Sampling Rate: ")
+        label_sampling_rate = QLabel("Sample Rate: ")
         self.combobox_sampling_rate = QComboBox()
         self.combobox_sampling_rate.addItem("Default (from file)")
         self.combobox_sampling_rate.addItems([f"{fs} Hz" for fs in SAMPLE_RATE_OPTIONS])

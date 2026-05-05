@@ -3,8 +3,6 @@ from PySide6.QtWidgets import QMainWindow, QApplication, QToolBar, QMessageBox
 from PySide6.QtCore import Qt, QTimer, Signal, QSize
 from PySide6.QtGui import QAction, QIcon
 
-# To run this module, use the command to execute it from the project root:
-#    python -m GUI.main_window
 from buffer.data_buffer import DataBuffer
 from GUI.signal_visualization import SignalPlotter
 from GUI.dock_widget import DockWidget
@@ -14,10 +12,15 @@ from GUI.band_power_widget import BandPowerWidget
 from GUI.band_detector_widget import BandDetectorWidget
 from GUI.load_file_dialog import LoadFileDialog
 from GUI.create_simulation_dialog import SimulationDialog
-from acquisition.load_acquisition import EEGRecordingLoader
+from GUI.config_acquisition_dialog import ConfigAcquisitionDialog
+from utl.data import AcquisitionParameters
+from acquisition.load_recording import EEGRecordingLoader
 from acquisition.simulate_acquisition import SignalGenerator
+from acquisition.config_acquisition import AcquisitionConfigurator
 from signal_processing.signal_processor import SignalProcessor
 
+# To run this module, use the command to execute it from the project root:
+#    python -m GUI.main_window
 
 class MainWindow(QMainWindow):
     acquisition_started = Signal()
@@ -37,9 +40,11 @@ class MainWindow(QMainWindow):
 
         self.load_file_dialog = LoadFileDialog()
         self.simulation_dialog = SimulationDialog()
+        self.acquisition_dialog = ConfigAcquisitionDialog()
 
         self.load_file_dialog.file_selected.connect(self._load_file)
-        self.simulation_dialog.simulation_parameters.connect(self._create_simulation)
+        self.simulation_dialog.parameters_selected.connect(self._create_simulation)
+        self.acquisition_dialog.parameters_selected.connect(self._set_acquisition_parameters)
 
         # Toolbar
         self.toolbar = QToolBar()
@@ -48,6 +53,7 @@ class MainWindow(QMainWindow):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self._create_toolbar_button(os.path.join(base_dir, "icons/open.png"), self._open_load_file_dialog)
         self._create_toolbar_button(os.path.join(base_dir, "icons/graph.png"), self._open_create_simulation_dialog)
+        self._create_toolbar_button(os.path.join(base_dir, "icons/signal.png"), self._open_acquisition_config_dialog)
         self.start_acq_buttom = self._create_toolbar_button(os.path.join(base_dir, "icons/play.png"), self._start_acquisition)
         self.stop_acq_buttom = self._create_toolbar_button(os.path.join(base_dir, "icons/stop.png"), self._stop_acquisition)
 
@@ -155,11 +161,34 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
 
+    def _set_acquisition_parameters(self, acq_parameters: AcquisitionParameters):
+        try:
+            buffer = DataBuffer(
+                n_channels = 2,
+                time_window_s = 10,
+                sampling_rate_Hz = acq_parameters.sample_rate
+            )
+
+            configurator = AcquisitionConfigurator(acq_parameters, buffer)
+            configurator.init_ads1292r()
+
+            self.acquisition_source = configurator
+            self.has_labels = False
+            self._initialize_pipeline(buffer)
+
+        except AssertionError as e:
+            QMessageBox.critical(self, "Configuration Error", str(e))
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+
     def _open_load_file_dialog(self):
         self.load_file_dialog.exec()
 
     def _open_create_simulation_dialog(self):
         self.simulation_dialog.exec()
+
+    def _open_acquisition_config_dialog(self):
+        self.acquisition_dialog.exec()
 
     def _start_acquisition(self):
         if self.acquisition_source is None:

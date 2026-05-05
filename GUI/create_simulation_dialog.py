@@ -1,15 +1,10 @@
 from PySide6.QtWidgets import QLabel, QDialog, QGridLayout, QSpinBox, QComboBox, QDialogButtonBox
 from PySide6.QtCore import Signal
+from utl.data import SAMPLE_RATE_OPTIONS
 
-SAMPLE_RATE_OPTIONS = [
-    160,
-    240,
-    320,
-    400
-]
 
 class SimulationDialog(QDialog):
-    simulation_parameters = Signal(int, int, int)     # n_channels, time_window, sample_rate
+    parameters_selected = Signal(int, int, int)     # n_channels, time_window, sample_rate
 
     def __init__(self):
         super().__init__()
@@ -50,7 +45,7 @@ class SimulationDialog(QDialog):
         self.setLayout(layout)
 
     def _confirm(self):
-        self.simulation_parameters.emit(
+        self.parameters_selected.emit(
             self.sb_n_channels.value(),
             self.sb_time_window.value(),
             SAMPLE_RATE_OPTIONS[self.combobox_sampling_rate.currentIndex()]
