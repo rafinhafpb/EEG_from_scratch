@@ -164,17 +164,20 @@ class MainWindow(QMainWindow):
     def _set_acquisition_parameters(self, acq_parameters: AcquisitionParameters):
         try:
             buffer = DataBuffer(
-                n_channels = 2,
+                n_channels = 1,
                 time_window_s = 10,
                 sampling_rate_Hz = acq_parameters.sample_rate
             )
 
-            configurator = AcquisitionConfigurator(acq_parameters, buffer)
-            configurator.init_ads1292r()
+            self.acquisition_dialog.configurator.set_buffer(buffer)
+            self.acquisition_dialog.configurator.set_parameters(acq_parameters)
+            self.acquisition_dialog.configurator.init_ads1292r()
 
-            self.acquisition_source = configurator
+            self.acquisition_source = self.acquisition_dialog.configurator
             self.has_labels = False
             self._initialize_pipeline(buffer)
+
+            self.band_detector.trigger_signal.connect(self.acquisition_dialog.configurator.activate_buzzer)
 
         except AssertionError as e:
             QMessageBox.critical(self, "Configuration Error", str(e))

@@ -3,8 +3,6 @@ from dataclasses import dataclass
 
 @dataclass
 class AcquisitionParameters:
-    port: str
-    baudrate: int
     sample_rate: int
     gain: int
     test_signal: bool
