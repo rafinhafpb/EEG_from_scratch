@@ -130,6 +130,13 @@ class AcquisitionConfigurator:
         self._set_test_signal(self.test_signal)
         self._set_lead_off(self.lead_off_enabled)
 
+        # Enable RLD: PDB_RLD=1, sense from CH2P and CH2N
+        self._send_command(self._write_to_register(0x06, 0x2C))
+
+        # Also need to tell RESP2 to use internal RLDREF (mid-supply)
+        # bit1 = RLDREF_INT = 1, bit0 must be 1
+        self._send_command(self._write_to_register(0x0A, 0x03))
+
     def start(self):
         self.serial.reset_input_buffer()    # Flush any stale bytes
         

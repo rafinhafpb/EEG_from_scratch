@@ -19,6 +19,9 @@ class DataBuffer:
         self.lock = Lock()
 
     def add_sample(self, samples: List[float], timestamp: float) -> None:
+        """
+        Add sample of data with size n_channels and timestamp from that sample.
+        """
         if len(samples) != self.n_channels:
             raise ValueError(f"Expected {self.n_channels} channels, got {len(samples)}")
 
@@ -28,6 +31,24 @@ class DataBuffer:
 
             self.write_idx = (self.write_idx + 1) % self.max_samples
             self.size = min(self.size + 1, self.max_samples)
+
+    def add_chunk(self, samples: np.ndarray, timestamp: np.ndarray) -> None:
+        """
+        Add chunk of data with size (n_channels, n_samples) and timestamp with size (n_samples).
+        """
+        if samples.shape[0] != self.n_channels:
+            raise ValueError(f"Expected {self.n_channels} channels, got {samples.shape[0]}")
+
+        if samples.shape[1] != len(timestamp):
+            raise ValueError(f"Expected timestamps for each sample, got {len(timestamp)} timestamps for {samples.shape[1]} samples")
+
+        with self.lock:
+            for i in range(len(timestamp)):
+                self.data[:, self.write_idx] = samples[:, i]
+                self.timestamps[self.write_idx] = timestamp[i]
+
+                self.write_idx = (self.write_idx + 1) % self.max_samples
+                self.size = min(self.size + 1, self.max_samples)
 
     def _get_ordered_indices(self) -> np.ndarray:
         """Return indices in chronological order"""
