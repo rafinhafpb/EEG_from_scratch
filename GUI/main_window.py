@@ -16,7 +16,6 @@ from GUI.config_acquisition_dialog import ConfigAcquisitionDialog
 from utl.data import AcquisitionParameters
 from acquisition.load_recording import EEGRecordingLoader
 from acquisition.simulate_acquisition import SignalGenerator
-from acquisition.config_acquisition import AcquisitionConfigurator
 from signal_processing.signal_processor import SignalProcessor
 
 # To run this module, use the command to execute it from the project root:
@@ -51,11 +50,31 @@ class MainWindow(QMainWindow):
         self.addToolBar(self.toolbar)
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        self._create_toolbar_button(os.path.join(base_dir, "icons/open.png"), self._open_load_file_dialog)
-        self._create_toolbar_button(os.path.join(base_dir, "icons/graph.png"), self._open_create_simulation_dialog)
-        self._create_toolbar_button(os.path.join(base_dir, "icons/signal.png"), self._open_acquisition_config_dialog)
-        self.start_acq_buttom = self._create_toolbar_button(os.path.join(base_dir, "icons/play.png"), self._start_acquisition)
-        self.stop_acq_buttom = self._create_toolbar_button(os.path.join(base_dir, "icons/stop.png"), self._stop_acquisition)
+        self._create_toolbar_button(
+            icon_path=os.path.join(base_dir, "icons/open.png"),
+            callback=self._open_load_file_dialog,
+            tooltip="Open EEG Recording"
+        )
+        self._create_toolbar_button(
+            icon_path=os.path.join(base_dir, "icons/graph.png"),
+            callback=self._open_create_simulation_dialog,
+            tooltip="Simulate Acquisition"
+        )
+        self._create_toolbar_button(
+            icon_path=os.path.join(base_dir, "icons/signal.png"),
+            callback=self._open_acquisition_config_dialog,
+            tooltip="Configure Live Acquisition"
+        )
+        self.start_acq_buttom = self._create_toolbar_button(
+            icon_path=os.path.join(base_dir, "icons/play.png"),
+            callback=self._start_acquisition,
+            tooltip="Start"
+        )
+        self.stop_acq_buttom = self._create_toolbar_button(
+            icon_path=os.path.join(base_dir, "icons/stop.png"),
+            callback=self._stop_acquisition,
+            tooltip="Stop"
+        )
 
         self.start_acq_buttom.setEnabled(False)
         self.stop_acq_buttom.setEnabled(False)
@@ -116,12 +135,15 @@ class MainWindow(QMainWindow):
 
         raw_plot_dock.raise_()
 
-    def _create_toolbar_button(self, icon_path: str, callback) -> QAction:
+    def _create_toolbar_button(self, icon_path: str, callback, tooltip: str = None) -> QAction:
         action = QAction(QIcon(icon_path), "", self)
         action.triggered.connect(callback)
+        if tooltip is not None:
+            action.setToolTip(tooltip)
+
         self.toolbar.addAction(action)
         return action
-    
+
     def _create_simulation(self, n_channels: int, time_window: int, fs: int):
         try:
             buffer = DataBuffer(
