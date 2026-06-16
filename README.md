@@ -231,6 +231,7 @@ Once connected:
 7. Click **Ok** and wait for the interface to appear
 8. Click **Play** to start acquisition
 9. Click **Stop** to halt acquisition
+10. *(Optional)* Save the acquisition recording by pressing the **Save** button and giving it a file name (.csv by default).
 
 #### **Signal Simulation**
 
@@ -246,7 +247,7 @@ To test the GUI without hardware:
 
 #### **Replay Recorded Signals**
 
-To analyze recorded EEG (3 files already there as examples):
+To analyze previously recorded EEG (3 files already there as examples):
 
 1. Click the **"open folder icon"** in the toolbar
 2. Click the `...` button and navigate to `acquisition/recordings/` folder
@@ -267,11 +268,11 @@ This widget displays checkboxes and sliders for real-time parameter adjustment:
 The **Band Detector** widget is the key for eyes-closed detection:
 
 1. **Band Selection** (Dropdown): Choose which frequency band to monitor
-   - **Delta** (0.5–4 Hz): Sleep-related, high during sleep
-   - **Theta** (4–8 Hz): Drowsiness and meditation
-   - **Alpha** (8–12 Hz): **Use this for eyes-closed detection**
-   - **Beta** (12–30 Hz): Alert, focus state
-   - **Gamma** (30–100 Hz): Active processing (noisy, not recommended)
+   - **Delta** (0.5-4 Hz): Sleep-related, high during sleep
+   - **Theta** (4-8 Hz): Drowsiness and meditation
+   - **Alpha** (8-12 Hz): **Use this for eyes-closed detection**
+   - **Beta** (12-30 Hz): Alert, focus state
+   - **Gamma** (30-100 Hz): Active processing (noisy, not recommended)
 
 2. **Channel Selection** (Dropdown): Monitor a specific channel or average across all channels
 
@@ -326,6 +327,7 @@ The ADS1292R includes a built-in **lead-off detection circuit** that measures el
 
 - **ADS1292R Datasheet**: [Texas Instruments](https://www.ti.com/lit/ds/symlink/ads1292r.pdf)
 - **10-20 Electrode System**: [EEG Electrode Placement](https://en.wikipedia.org/wiki/10–20_system_(EEG))
+- **Closed and Open Eyes EEG Data**: [Dataset](https://doi.org/10.5281/zenodo.10168535)
 
 ---
 
