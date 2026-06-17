@@ -41,59 +41,60 @@ class SignalProcessor:
 
     def _catch_up(self):
         """
-        Pull any samples from the raw buffer that haven't been filtered
-        yet and write them into the filtered buffer.
-        Since both buffers are the same size, we compare their write_idx
-        and size values directly to find the gap. We snapshot the raw
-        buffer's internal state under its lock, then release immediately
-        so we don't hold it during the (potentially slow) filter math.
+        Pull unfiltered samples from the raw buffer and process them.
+        Uses a single consistent snapshot of the raw buffer taken under
+        its lock, then computes new samples by comparing the last filtered
+        timestamp against the raw buffer's chronological sequence.
         """
         with self.buffer.lock:
             raw_write_idx = self.buffer.write_idx
-            raw_size = self.buffer.size
-            raw_data = self.buffer.data.copy()
-            raw_ts = self.buffer.timestamps.copy()
+            raw_size      = self.buffer.size
+            raw_data      = self.buffer.data.copy()
+            raw_ts        = self.buffer.timestamps.copy()
 
         if raw_size == 0:
             return
 
-        flt_write_idx = self._filtered.write_idx
-        flt_size = self._filtered.size
-        max_samples = self.buffer.max_samples
-
-        # How many samples in the raw buffer are newer than what we've filtered?
-        if flt_size == 0:
-            # Filtered buffer is empty: process everything currently in raw
-            n_new = raw_size
-        elif raw_write_idx > flt_write_idx:
-            n_new = raw_write_idx - flt_write_idx
-        elif raw_write_idx < flt_write_idx:
-            # Raw buffer wrapped past the filtered write pointer
-            n_new = (max_samples - flt_write_idx) + raw_write_idx
+        # Reconstruct the raw buffer in chronological order
+        if raw_size < self.buffer.max_samples:
+            ordered_idx = np.arange(raw_size)
         else:
-            # Pointers are equal: either nothing is new, or exactly one
-            # full cycle of new data arrived
-            n_new = raw_size - flt_size
+            ordered_idx = np.concatenate([
+                np.arange(raw_write_idx, self.buffer.max_samples),
+                np.arange(0, raw_write_idx)
+            ])
 
-        if n_new <= 0:
+        ordered_ts   = raw_ts[ordered_idx]
+        ordered_data = raw_data[:, ordered_idx]
+
+        # Find how many of these samples are newer than the last one we filtered
+        if self._filtered.size == 0:
+            # Nothing filtered yet — process everything
+            new_data = ordered_data
+            new_ts   = ordered_ts
+        else:
+            # Get the timestamp of the last sample we already filtered
+            last_filtered_ts = self._get_last_filtered_ts()
+
+            # Find all raw samples strictly newer than that
+            mask = ordered_ts > last_filtered_ts
+            if not np.any(mask):
+                return
+
+            new_data = ordered_data[:, mask]
+            new_ts   = ordered_ts[mask]
+
+        if new_data.shape[1] == 0:
             return
 
-        # Extract the n_new samples chronologically from the raw snapshot.
-        # They are the ones immediately before raw_write_idx in the ring.
-        start = (raw_write_idx - n_new) % max_samples
-
-        if start + n_new <= max_samples:
-            new_samples = raw_data[:, start:start + n_new]
-            new_ts = raw_ts[start:start + n_new]
-        else:
-            cut = max_samples - start
-            new_samples = np.concatenate([raw_data[:, start:], raw_data[:, :n_new - cut]], axis=1)
-            new_ts = np.concatenate([raw_ts[start:], raw_ts[:n_new - cut]])
-
-        filtered = self._apply_filters(new_samples)
-
-        # Write new_samples into the filtered DataBuffer
+        filtered = self._apply_filters(new_data)
         self._filtered.add_chunk(filtered, new_ts)
+
+
+    def _get_last_filtered_ts(self) -> float:
+        """Return the timestamp of the most recently written filtered sample."""
+        last_idx = (self._filtered.write_idx - 1) % self._filtered.max_samples
+        return self._filtered.timestamps[last_idx]
 
     def _apply_filters(self, chunk: np.ndarray) -> np.ndarray:
         """
